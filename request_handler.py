@@ -40,6 +40,9 @@ def get_head(route):
         open(resource_path)
     except IOError:
         response_status_code = 404
+    except Exception as e:
+        print e
+        raise Exception
     return response_status_code, response_body
 
 
