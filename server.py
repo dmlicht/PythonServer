@@ -5,7 +5,6 @@
 #dmlicht
 #david.m.lichtenberg@gmail.com
 
-
 import socket
 import server_constants
 
@@ -15,15 +14,29 @@ def construct_header(http_ver, status_code):
 
 class HTTPMessage(object):
     def __init__(self, msg):
-        tokens = msg.split()
-        self.method = tokens[0]
-        self.resource = tokens[1]
-        self.version = tokens[2]
+        #TODO: implement error checking
+        #NOTE: will cause error is no double newline following head
+        header = msg.split('\n\n')[0] 
+        header_lines = header.split('\r\n')
+        request_line = header_lines[0]
+        self.header_fields = self.parse_header_fields(header_lines[1:])
+        self.method, self.resource, self.version = request_line.split()
 
-        #TODO: fix parameter parsing, not working properly
-        self.params = {}
-        for i in xrange(3, len(tokens), 2):
-            self.params[tokens[i]] = tokens[i+1]
+    def parse_header_fields(self, header_field_lines):
+        """takes newline seperated header and returns dict representation"""
+        header_fields = {}
+        for line in (line for line in header_field_lines if line.strip()):
+            key, val = line.split(':', 1)
+            header_fields[key] = val
+        return header_fields
+
+class Response(object):
+    def __init__(self):
+        pass
+    def __repr__(self):
+        pass
+    def __str__(self):
+        pass
 
 class HTTPServer(object):
     def __init__(self, handlers):
