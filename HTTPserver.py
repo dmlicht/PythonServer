@@ -25,8 +25,7 @@ class Request(object):
     def parse_header_fields(self, header_field_lines):
         """takes newline seperated header and returns dict representation"""
         header_fields = {}
-        for line in (line for line in header_field_lines if line.strip()):
-            key, val = line.split(':', 1)
+        for key, val in (line.split(':', 1) for line in header_field_lines if line.strip()):
             header_fields[key] = val
         return header_fields
 
