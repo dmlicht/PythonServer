@@ -1,12 +1,10 @@
 #!/usr/bin/env python
+"""toy server for playing with networking in python"""
 
 #David Lichtenberg
 #dmlicht
 #david.m.lichtenberg@gmail.com
 
-#
-#toy server for playing with networking in python
-#
 
 import socket
 import server_constants
@@ -46,11 +44,9 @@ class HTTPServer(object):
         return response_header, response_body
 
     def setup(self):
-        #accept requests from all interfaces
-        host = ''
-
-        #use port 80 as binding port
-        port = 9000
+        host = '' #accept requests from all interfaces
+        
+        port = 9000 #use port 80 as binding port
 
         #Initialize IPv4 (AF_INET) socket using TCP (SOCK_STREAM)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -88,3 +84,4 @@ class HTTPServer(object):
             clients_served += 1
             print 'clients served:', clients_served
             client_socket.close()
+
