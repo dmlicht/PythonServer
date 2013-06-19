@@ -28,7 +28,7 @@ class HTTPMessage(object):
 class HTTPServer(object):
     def __init__(self, handlers):
         self.handlers = handlers
-        self.setup()
+        self.run()
 
     def handle_msg(self, msg):
         """returns header and body (if applicable) for given request"""
@@ -43,7 +43,7 @@ class HTTPServer(object):
         response_header = construct_header(http_msg.version, status_code)
         return response_header, response_body
 
-    def setup(self):
+    def run(self):
         host = '' #accept requests from all interfaces
         
         port = 9000 #use port 80 as binding port
