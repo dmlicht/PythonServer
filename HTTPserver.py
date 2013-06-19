@@ -10,12 +10,12 @@ import server_constants
 
 def construct_header(http_ver, status_code):
     """returns appropriate response header"""
-    return http_ver + ' ' + str(status_code) + ' ' + server_constants.REASON_PHRASES[status_code]
 
-class HTTPMessage(object):
+class Request(object):
     def __init__(self, msg):
         #TODO: implement error checking
         #NOTE: will cause error is no double newline following head
+        self.msg = msg
         header = msg.split('\n\n')[0] 
         header_lines = header.split('\r\n')
         request_line = header_lines[0]
@@ -30,13 +30,23 @@ class HTTPMessage(object):
             header_fields[key] = val
         return header_fields
 
-class Response(object):
-    def __init__(self):
-        pass
+    def __str__(self):
+        return self.msg
+
     def __repr__(self):
         pass
+
+
+class Response(object):
+    def __init__(self, http_ver, status_code):
+        self.http_ver = http_ver
+        self.status_code = http_ver
+
     def __str__(self):
-        pass
+        return http_ver + ' ' + str(status_code) + ' ' + server_constants.REASON_PHRASES[status_code]
+
+    def __repr__(self):
+        return "<Response: %s>" % self
 
 class HTTPServer(object):
     def __init__(self, handlers):
@@ -45,7 +55,7 @@ class HTTPServer(object):
 
     def handle_msg(self, msg):
         """returns header and body (if applicable) for given request"""
-        http_msg = HTTPMessage(msg)
+        http_msg = Request(msg)
         response_body = ""
         if http_msg.method in self.handlers:
             status_code, response_body = self.handlers[http_msg.method](http_msg.resource)
@@ -53,7 +63,7 @@ class HTTPServer(object):
             status_code = 501 #Is okay request but not implemented
         else:
             status_code = 400 #Not a supported method
-        response_header = construct_header(http_msg.version, status_code)
+        response_header = Response(http_msg.version, status_code)
         return response_header, response_body
 
     def run(self):
