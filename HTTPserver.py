@@ -47,7 +47,7 @@ class Response(object):
     def __repr__(self):
         return "<Response: %s>" % self
 
-class HTTPServer(object):
+class Server(object):
     def __init__(self, handlers):
         self.handlers = handlers
         self.run()
