@@ -8,15 +8,17 @@
 import socket
 import server_constants
 
-def construct_header(http_ver, status_code):
-    """returns appropriate response header"""
-
 class Request(object):
     def __init__(self, msg):
         #TODO: implement error checking
         #NOTE: will cause error is no double newline following head
         self.msg = msg
-        header = msg.split('\n\n')[0] 
+        request_chunks = msg.split('\r\n\r\n', 1)
+        header = request_chunks[0]
+        if len(request_chunks) == 2:
+            self.body = request_chunks[1]
+        else:
+            self.body = None
         header_lines = header.split('\r\n')
         request_line = header_lines[0]
         self.header_fields = self.parse_header_fields(header_lines[1:])
@@ -33,16 +35,61 @@ class Request(object):
         return self.msg
 
     def __repr__(self):
-        pass
-
+        return "<Request: %s" % self
 
 class Response(object):
-    def __init__(self, http_ver, status_code):
-        self.http_ver = http_ver
-        self.status_code = http_ver
+    """Builds response message given response data and/or status code"""
+
+    http_ver = 'HTTP/0.9'
+    default_bodies = {
+            200: "<html> ok </html>",
+            400: "<html> unsupported method</html>",
+            404: "<html> page not found </html>",
+            501: "<html> method supported but not implemented</html>"
+    }
+
+    def __init__(self, status_code=200, body=None, **headers):
+        self.status_code = status_code 
+        self.body = body
+        self.headers = headers
+    
+    @classmethod
+    def convenience(cls, response):
+        if response is None:
+            return cls(404, None)
+        if isinstance(response, int): #passed status code to function
+            return cls(response, None)
+        if not isinstance(response, cls): #we got something containing a body
+            return cls(200, response)
+        else:
+            return response
+
+    def _body_getter(self):
+        return self._body
+
+    def _body_setter(self, body):
+        if body is None:
+            self._body = self.default_bodies[self.status_code]
+        else:
+            self._body = body
+
+    #property creates getters and setters on instance variables
+    body = property(_body_getter, _body_setter)
+
+    def _response_line(self):
+        """returns a string of the response line"""
+        return "{http_ver} {status_code} {reason_phrase}\r\n".format(
+                http_ver = self.http_ver,
+                status_code = self.status_code,
+                reason_phrase = server_constants.REASON_PHRASES[self.status_code]
+        )
+
+    def _str_header_fields(self):
+        """returns string representation of header fields"""
+        return '\r\n'.join([k + ': ' + v for (k,v) in self.headers.items()]) + '\r\n\r\n'
 
     def __str__(self):
-        return http_ver + ' ' + str(status_code) + ' ' + server_constants.REASON_PHRASES[status_code]
+        return self._response_line() + self._str_header_fields() + self.body
 
     def __repr__(self):
         return "<Response: %s>" % self
@@ -54,20 +101,18 @@ class Server(object):
 
     def handle_msg(self, msg):
         """returns header and body (if applicable) for given request"""
-        http_msg = Request(msg)
-        response_body = ""
-        if http_msg.method in self.handlers:
-            status_code, response_body = self.handlers[http_msg.method](http_msg.resource)
-        elif http_msg.method in server_constants.METHODS:
-            status_code = 501 #Is okay request but not implemented
+        request = Request(msg)
+        if request.method in self.handlers:
+            response = self.handlers[request.method](request)
+            response = Response.convenience(response)
+        elif request.method in server_constants.METHODS:
+            response = Response.convenience(501) #Is okay request but not implemented
         else:
-            status_code = 400 #Not a supported method
-        response_header = Response(http_msg.version, status_code)
-        return response_header, response_body
+            response = Response.convenience(400) #Not a supported method
+        return response
 
     def run(self):
         host = '' #accept requests from all interfaces
-        
         port = 9000 #use port 80 as binding port
 
         #Initialize IPv4 (AF_INET) socket using TCP (SOCK_STREAM)
@@ -75,7 +120,6 @@ class Server(object):
 
         #set port to be reusable - this allows port to be freed when socket is closed
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
         clients_served = 0
 
         try:
@@ -96,11 +140,12 @@ class Server(object):
             msg = client_socket.recv(2048)
 
             #TODO: spin off new thread
-            outgoing_header, outgoing_body = self.handle_msg(msg)
+            response = self.handle_msg(msg)
 
             try:
-                client_socket.send(msg)
-                client_socket.send(outgoing_body)
+                #client_socket.send(msg)
+                #print str(response)
+                client_socket.send(str(response))
             except socket.error, e:
                 print "error sending out file: ", e
             clients_served += 1
