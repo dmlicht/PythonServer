@@ -23,5 +23,5 @@ credits
 -------
 
 thanks to:
-	Tom Ballinger for code reviewing
-	Sarah Moore for coming up with a cute name
+	[Thomas Ballinger](https://github.com/thomasballinger) for code reviewing
+	[Sarah Moore](https://github.com/99sfmoore) for coming up with a cute name
